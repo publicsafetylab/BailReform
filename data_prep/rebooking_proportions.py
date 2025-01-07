@@ -1,18 +1,11 @@
-import argparse
-import numpy as np
-import pandas as pd
-
-from datetime import datetime as dt
-from datetime import timedelta as td
-
-from utils import MongoCollections, thread
+from utils import *
 
 
 # TODO: - optimize rebooking flagger (takes ~20 min currently)
 #       - standardize admission date based on explicit field hierarchy
 
 
-class FetchRebookings:
+class RebookingProportions:
     def __init__(self, arguments):
         self.args = arguments
         self.first = dt.strptime(self.args.first, "%Y-%m-%d")
@@ -22,7 +15,7 @@ class FetchRebookings:
         pd.options.mode.chained_assignment = None
 
     def run(self):
-        rosters = self.get_viable_rosters()
+        rosters = get_viable_rosters(self)
         df = pd.DataFrame(thread(self.get_bookings, rosters))
         df["month"] = df["first_seen"].dt.month
         df["year"] = df["first_seen"].dt.year
@@ -34,39 +27,10 @@ class FetchRebookings:
         # and output state-year-month matrix csvs
         for window in self.args.windows:
             mx = self.prep_matrix(df, window)
-            mx.to_csv(f"rebookings/within_{window}_days.csv", index=False)
-
-    def get_viable_rosters(self):
-        """
-        collect list of rosters by id
-        with format `"_id": "{state abbreviation}-{county}"`,
-        e.g., "AL-Autauga", that meet inclusion criteria
-        """
-        rosters = list(self.dbs.scrape_dates.find({}))
-
-        # exclude states
-        for state in self.args.exclude:
-            rosters = [r for r in rosters if not r["_id"].startswith(f"{state}-")]
-
-        # span date range
-        rosters = [
-            r
-            for r in rosters
-            if r["first_scrape"] <= self.first and r["last_scrape"] >= self.last
-        ]
-
-        # above missing scrape date threshold
-        rosters = [
-            r
-            for r in rosters
-            if len(
-                pd.date_range(self.first, self.last).difference(r["missing_scrapes"])
+            mx.to_csv(
+                f"../matrices/rebookings/threshold_{str(self.args.threshold).replace('.', '_')}/within_{window}_days.csv",
+                index=False,
             )
-            / len(pd.date_range(self.first, self.last))
-            >= self.args.threshold
-        ]
-
-        return list(r["_id"] for r in rosters)
 
     def get_bookings(self, roster):
         """
@@ -77,7 +41,7 @@ class FetchRebookings:
         match = {
             "meta.State": state,
             "meta.County": county,
-            "meta.first_seen": {"$gte": self.first, "$lte": self.last}
+            "meta.first_seen": {"$gte": self.first, "$lte": self.last},
         }
         query = {
             "_id": 0,
@@ -118,7 +82,9 @@ class FetchRebookings:
             for i in range(len(bookings) - 1):
                 r = {"id_booking": bookings[i]["id_booking"]}
                 for window in self.args.windows:
-                    if (bookings[i + 1]["first_seen"] - bookings[i]["first_seen"]).days <= window:
+                    if (
+                        bookings[i + 1]["first_seen"] - bookings[i]["first_seen"]
+                    ).days <= window:
                         r.update({f"rb_{window}": 1})
                 rs.append(r)
 
@@ -144,57 +110,25 @@ class FetchRebookings:
         then aggregate to proportions by state-year-month
         """
         df = df[df["first_seen"] < self.last - td(days=window)]
-        admissions = df.groupby(["state", "year", "month"]).size().reset_index().rename(columns={0: "admissions"})
-        rebookings = df.groupby(["state", "year", "month"])[f"rb_{window}"].sum().reset_index()
+        admissions = (
+            df.groupby(["state", "year", "month"])
+            .size()
+            .reset_index()
+            .rename(columns={0: "admissions"})
+        )
+        rebookings = (
+            df.groupby(["state", "year", "month"])[f"rb_{window}"].sum().reset_index()
+        )
         aggregated = pd.merge(admissions, rebookings, on=["state", "year", "month"])
         aggregated["proportion"] = aggregated[f"rb_{window}"] / aggregated["admissions"]
-        matrix = aggregated.pivot(columns=["year", "month"], index=["state"], values="proportion").T
+        matrix = aggregated.pivot(
+            columns=["year", "month"], index=["state"], values="proportion"
+        ).T
         return matrix
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-f",
-        "--first",
-        type=str,
-        default="2023-01-01",
-        help="""
-        Earliest date from which to collect admissions 
-        (defaults to 2023-01-01).
-        """,
-    )
-    parser.add_argument(
-        "-l",
-        "--last",
-        type=str,
-        default=dt.strftime(dt.now().replace(day=1) - td(days=1), "%Y-%m-%d"),
-        help="""
-        Latest date from which to collect admissions 
-        (defaults to last day of previous month).
-        """,
-    )
-    parser.add_argument(
-        "-t",
-        "--threshold",
-        type=float,
-        default=0,
-        help="""
-        Threshold below which to exclude rosters defined by the proportion of 
-        dates in specified range with missing scrape data.
-        """,
-    )
-    parser.add_argument(
-        "-x",
-        "--exclude",
-        type=str,
-        default=list(),
-        nargs="*",
-        help="""
-        Exclude any admissions from specified list of states
-        (specify as, e.g., `AL AR ...`).
-        """
-    )
+    parser = get_parser()
     parser.add_argument(
         "-w",
         "--windows",
@@ -204,8 +138,8 @@ if __name__ == "__main__":
         help="""
         Forward windows within which to check for rebookings
         (defaults to 90 days, specify as, e.g., `30 60 90 ...`).
-        """
+        """,
     )
     args = parser.parse_args()
 
-    FetchRebookings(args).run()
+    RebookingProportions(args).run()
