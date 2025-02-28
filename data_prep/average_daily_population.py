@@ -1,9 +1,6 @@
 from utils import *
 
 
-# TODO: - standardize admission date based on explicit field hierarchy
-
-
 class ADP:
     def __init__(self, arguments):
         self.args = arguments

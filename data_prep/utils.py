@@ -100,11 +100,15 @@ def get_viable_rosters(self):
         if r["first_scrape"] <= self.first and r["last_scrape"] >= self.last
     ]
 
-    # above missing scrape date threshold
+    # above missing scrape date threshold for specified date range
     rosters = [
         r
         for r in rosters
-        if len(pd.date_range(self.first, self.last).difference(r["missing_scrapes"]))
+        if len(
+            pd.date_range(self.first, self.last).difference(
+                [d for d in r["missing_scrapes"] if self.first <= d <= self.last]
+            )
+        )
         / len(pd.date_range(self.first, self.last))
         >= self.args.threshold
     ]
