@@ -13,22 +13,39 @@ class RebookingProportions:
         self.dbs = MongoCollections()
         self.flags = ["non_distinct_jdi_inmate_id"]
         pd.options.mode.chained_assignment = None
+        self.cycles = get_cycles(self)
+        self.first = min([t[1] for t in self.cycles])
+        self.last = max([t[2] for t in self.cycles])
+        self.path = f"../matrices/{self.args.state}/rebookings/threshold_{str(self.args.threshold).replace('.', '_')}/"
+        for i, piece in enumerate(self.path.split("/")[1:-1]):
+            if not os.path.exists(
+                "../" + "/".join(self.path.split("/")[1:-1][: i + 1])
+            ):
+                os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
+        if self.args.state == "fl":
+            start = START_FL
+        elif self.args.state == "ga":
+            start = START_GA
+        else:
+            raise ValueError("unidentified state")
+        self.windows = [n * 28 for n in range(1, round((self.last - start).days / 28))]
+        if self.args.windows:
+            self.windows = self.args.windows
 
     def run(self):
         rosters = get_viable_rosters(self)
         df = pd.DataFrame(thread(self.get_bookings, rosters))
-        df["month"] = df["first_seen"].dt.month
-        df["year"] = df["first_seen"].dt.year
         df = self.apply_exclusions(df)
+        df["cycle"] = df["first_seen"].apply(lambda date: self.find_date_range(date))
         df = df.sort_values(by=["id_roster", "id_person", "first_seen"])
         df = self.flag_rebookings(df)
 
         # run through windows, abridge data as necessary
         # and output state-year-month matrix csvs
-        for window in self.args.windows:
+        for window in self.windows:
             mx = self.prep_matrix(df, window)
             mx.to_csv(
-                f"../matrices/rebookings/threshold_{str(self.args.threshold).replace('.', '_')}/within_{window}_days.csv",
+                self.path + f"within_{window}_days.csv",
                 index=False,
             )
 
@@ -67,6 +84,12 @@ class RebookingProportions:
         df = df[df["id_person"].notna()]
         return df[~df["id_person"].apply(lambda o: isinstance(o, list))]
 
+    def find_date_range(self, date):
+        for i, start_date, end_date in self.cycles:
+            if start_date <= date <= end_date:
+                return i
+        return None
+
     def flag_rebookings(self, df):
         """
         for each person, indicate rebookings within windows of
@@ -81,7 +104,7 @@ class RebookingProportions:
 
             for i in range(len(bookings) - 1):
                 r = {"id_booking": bookings[i]["id_booking"]}
-                for window in self.args.windows:
+                for window in self.windows:
                     if (
                         bookings[i + 1]["first_seen"] - bookings[i]["first_seen"]
                     ).days <= window:
@@ -109,21 +132,19 @@ class RebookingProportions:
         look-forward window for rebookings,
         then aggregate to proportions by state-year-month
         """
-        df = df[df["first_seen"] < self.last - td(days=window)]
+        df = df[df["first_seen"] <= self.last - td(days=window)]
         admissions = (
-            df.groupby(["state", "year", "month"])
+            df.groupby(["state", "cycle"])
             .size()
             .reset_index()
             .rename(columns={0: "admissions"})
         )
-        rebookings = (
-            df.groupby(["state", "year", "month"])[f"rb_{window}"].sum().reset_index()
-        )
-        aggregated = pd.merge(admissions, rebookings, on=["state", "year", "month"])
+        rebookings = df.groupby(["state", "cycle"])[f"rb_{window}"].sum().reset_index()
+        aggregated = pd.merge(admissions, rebookings, on=["state", "cycle"])
         aggregated["proportion"] = aggregated[f"rb_{window}"] / aggregated["admissions"]
         matrix = aggregated.pivot(
-            columns=["year", "month"], index=["state"], values="proportion"
-        ).T
+            columns=["cycle"], index=["state"], values="proportion"
+        ).T.reset_index()
         return matrix
 
 
@@ -133,11 +154,9 @@ if __name__ == "__main__":
         "-w",
         "--windows",
         type=int,
-        default=[90],
         nargs="*",
         help="""
         Forward windows within which to check for rebookings
-        (defaults to 90 days, specify as, e.g., `30 60 90 ...`).
         """,
     )
     args = parser.parse_args()
