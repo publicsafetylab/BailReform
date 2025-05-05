@@ -114,6 +114,24 @@ def get_parser():
             (specify as, e.g., `AL AR ...`).
             """,
     )
+    parser.add_argument(
+        "-d",
+        "--demographics",
+        action="store_true",
+        help="""
+            If specified, get list of rosters at intersection of
+            demographic availabilities, e.g., has race, gender, etc.
+            (used in `get_roster_list.py`).
+        """,
+    )
+    parser.add_argument(
+        "--save",
+        action="store_true",
+        help="""
+            If specified, save roster list to local file
+            (used in `get_roster_list.py`).
+            """,
+    )
     return parser
 
 

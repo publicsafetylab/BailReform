@@ -21,7 +21,13 @@ class LOS:
         self.cycles = get_cycles(self)
         self.first = min([t[1] for t in self.cycles])
         self.last = max([t[2] for t in self.cycles])
-        self.path = f"../matrices/{self.args.state}/los/threshold_{str(self.args.threshold).replace('.', '_')}/"
+        if self.args.demographics:
+            self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov/los/"
+        else:
+            self.path = (
+                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
+                f"/los/"
+            )
         for i, piece in enumerate(self.path.split("/")[1:-1]):
             if not os.path.exists(
                 "../" + "/".join(self.path.split("/")[1:-1][: i + 1])
@@ -29,7 +35,22 @@ class LOS:
                 os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
 
     def run(self):
-        rosters = get_viable_rosters(self)
+        if self.args.demographics:
+            rosters = sorted(
+                list(
+                    pd.read_csv(
+                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_demographics.csv"
+                    )["rosters"].unique()
+                )
+            )
+        else:
+            rosters = sorted(
+                list(
+                    pd.read_csv(
+                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters.csv"
+                    )["rosters"].unique()
+                )
+            )
 
         df = pd.DataFrame(thread(self.get_bookings, rosters))
         df = self.apply_exclusions(df)
