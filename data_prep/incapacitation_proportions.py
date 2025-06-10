@@ -71,27 +71,19 @@ class Incapacitation:
         df["cycle"] = df["first_seen"].apply(lambda date: self.find_date_range(date))
         df["los"] = (df["last_seen"] - df["first_seen"]).dt.days + 1
 
-        print(df)
-        print(df["first_seen"].min())
-        print(df["first_seen"].max())
-        print(df["last_seen"].min())
-        print(df["last_seen"].max())
-
         for w in self.windows:
             df[f"prop_{w}"] = df["los"] / w
-            # df[f"prop_{w}"] = np.where(df[f"prop_{w}"] > 1, 1, df[f"prop_{w}"])
+            df[f"prop_{w}"] = np.where(df[f"prop_{w}"] > 1, 1, df[f"prop_{w}"])
             assert df[f"prop_{w}"].min() > 0
 
-        print(df)
-
-        # # run through windows, abridge data as necessary
-        # # and output state-year-month matrix csvs
-        # for window in self.windows:
-        #     mx = self.prep_matrix(df, window)
-        #     mx.to_csv(
-        #         self.path + f"proportion_of_next_{window}_days.csv",
-        #         index=False,
-        #     )
+        # run through windows, abridge data as necessary
+        # and output state-year-month matrix csvs
+        for window in self.windows:
+            mx = self.prep_matrix(df, window)
+            mx.to_csv(
+                self.path + f"proportion_of_next_{window}_days.csv",
+                index=False,
+            )
 
     def get_bookings(self, roster):
         """
