@@ -43,7 +43,6 @@ AR-White
 AR-Yell
 AZ-Apache
 AZ-Yuma
-CA-Amador
 CA-Inyo
 CA-Kings
 CA-Marin
@@ -56,10 +55,8 @@ CA-San_Mateo
 CA-Santa_Cruz
 CA-Sutter
 CA-Tehama
-CO-Boulder
 CO-Jefferson
 CO-Pueblo
-CO-Teller
 FL-Alachua
 FL-Bradford
 FL-Clay
@@ -97,8 +94,10 @@ GA-Lumpkin
 GA-Oconee
 GA-Paulding
 GA-Pickens
+GA-Rockdale
 GA-Toombs
 GA-Troup
+GA-Whitfield
 IA-Clinton
 IA-Ida
 IA-Pottawattamie
@@ -108,7 +107,7 @@ IL-Douglas
 IL-Kankakee
 IL-Kendall
 IL-Macon
-IL-St_Clair
+IL-Will
 IL-Woodford
 IN-Boone
 IN-Dearborn
@@ -138,8 +137,10 @@ IN-Whitley
 KS-Brown
 KS-Chase
 KS-Cherokee
+KS-Coffey
 KS-Crawford
 KS-Dickinson
+KS-Doniphan
 KS-Finney
 KS-Geary
 KS-Jackson
@@ -147,11 +148,13 @@ KS-Jefferson
 KS-Labette
 KS-Marion
 KS-McPherson
+KS-Pratt
 KS-Rooks
 KS-Shawnee
 KS-Sumner
 KS-Thomas
 KS-Wabaunsee
+KS-Wyandotte
 KY-Adair
 KY-Allen
 KY-Bell
@@ -213,6 +216,7 @@ LA-St_John
 LA-Terrebonne
 MD-Allegany
 MD-Dorchester
+ME-Penobscot
 MI-Kalamazoo
 MI-Midland
 MO-Bollinger
@@ -223,7 +227,6 @@ MO-Cedar
 MO-Cooper
 MO-Daviess
 MO-Greene
-MO-Henry
 MO-Howard
 MO-Lawrence
 MO-McDonald
@@ -245,7 +248,6 @@ MS-Jasper
 MS-Jones
 MS-Lafayette
 MS-Lamar
-MS-Lee
 MS-Madison
 MS-Marion
 MS-Perry
@@ -282,7 +284,6 @@ NE-Buffalo
 NE-Cass
 NJ-Ocean
 NJ-Salem
-NM-Curry
 NM-Dona_Ana
 NM-San_Juan
 NM-Socorro
@@ -313,8 +314,9 @@ OH-Wyandot
 OK-Carter
 OK-Comanche
 OK-Creek
+OK-Lincoln
+OK-Love
 OK-Mayes
-OK-Okmulgee
 OK-Pawnee
 OK-Pottawatomie
 OR-Baker
@@ -329,7 +331,6 @@ OR-Klamath
 OR-Lane
 OR-Marion
 OR-Multnomah
-OR-Umatilla
 PA-Dauphin
 PA-Greene
 SC-Anderson_City
@@ -355,18 +356,23 @@ TN-Robertson
 TN-Shelby
 TN-Sullivan
 TX-Angelina
+TX-Archer
 TX-Bell
 TX-Brazoria
 TX-Calhoun
+TX-Clay
 TX-Coleman
 TX-Hardin
+TX-Hays
 TX-Hutchinson
+TX-Jack
 TX-Jim_Wells
 TX-Kleberg
 TX-Lavaca
 TX-League_City
 TX-Mansfield
 TX-Martin
+TX-McCulloch
 TX-Milam
 TX-Mills
 TX-Montgomery
@@ -377,6 +383,7 @@ TX-Parmer
 TX-Polk
 TX-Reagan
 TX-Red_River
+TX-Runnels
 TX-Rusk
 TX-Terry
 TX-Titus
@@ -397,9 +404,9 @@ VA-Southwest
 VA-Virginia_Beach
 VA-Warren
 VA-Western_Tidewater
+WA-Kitsap
 WA-Nisqually
 WI-Barron
-WI-Kenosha
 WI-Marathon
 WI-Racine
 WY-Big_Horn
