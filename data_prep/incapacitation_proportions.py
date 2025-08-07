@@ -23,20 +23,37 @@ class Incapacitation:
         self.first = min([t[1] for t in self.cycles])
         self.last = max([t[2] for t in self.cycles])
         if self.args.demographics:
-            self.path = (
+            self.path_piecewise = (
                 f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov"
-                f"/incapacitation/"
+                f"/incapacitation_piecewise/"
+            )
+            self.path_cumulative = (
+                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov"
+                f"/incapacitation_cumulative/"
             )
         else:
-            self.path = (
+            self.path_piecewise = (
                 f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
-                f"/incapacitation/"
+                f"/incapacitation_piecewise/"
             )
-        for i, piece in enumerate(self.path.split("/")[1:-1]):
+            self.path_cumulative = (
+                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
+                f"/incapacitation_cumulative/"
+            )
+        for i, piece in enumerate(self.path_piecewise.split("/")[1:-1]):
             if not os.path.exists(
-                "../" + "/".join(self.path.split("/")[1:-1][: i + 1])
+                "../" + "/".join(self.path_piecewise.split("/")[1:-1][: i + 1])
             ):
-                os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
+                os.mkdir(
+                    "../" + "/".join(self.path_piecewise.split("/")[1:-1][: i + 1])
+                )
+        for i, piece in enumerate(self.path_cumulative.split("/")[1:-1]):
+            if not os.path.exists(
+                "../" + "/".join(self.path_cumulative.split("/")[1:-1][: i + 1])
+            ):
+                os.mkdir(
+                    "../" + "/".join(self.path_cumulative.split("/")[1:-1][: i + 1])
+                )
         if self.args.state == "fl":
             start = START_FL
         elif self.args.state == "ga":
@@ -65,13 +82,30 @@ class Incapacitation:
                 )
             )
 
-        df = pd.DataFrame(thread(self.get_bookings, rosters[:1]))
+        df = pd.DataFrame(thread(self.get_bookings, rosters))
         df = self.apply_exclusions(df)
 
         df["cycle"] = df["first_seen"].apply(lambda date: self.find_date_range(date))
         df["los"] = (df["last_seen"] - df["first_seen"]).dt.days + 1
 
         for w in self.windows:
+            # handle piecewise window proportions
+            window_range = (w - 27, w)
+            df[f"prop_{window_range[0]}-{window_range[1]}"] = np.where(
+                df["los"] < window_range[0], 0, -1
+            )
+            df[f"prop_{window_range[0]}-{window_range[1]}"] = np.where(
+                df["los"] > window_range[1],
+                1,
+                df[f"prop_{window_range[0]}-{window_range[1]}"],
+            )
+            df[f"prop_{window_range[0]}-{window_range[1]}"] = np.where(
+                (window_range[0] <= df["los"]) & (df["los"] <= window_range[1]),
+                (df["los"] - window_range[0] + 1) / 28,
+                df[f"prop_{window_range[0]}-{window_range[1]}"],
+            )
+
+            # handle cumulative window proportions
             df[f"prop_{w}"] = df["los"] / w
             df[f"prop_{w}"] = np.where(df[f"prop_{w}"] > 1, 1, df[f"prop_{w}"])
             assert df[f"prop_{w}"].min() > 0
@@ -79,9 +113,15 @@ class Incapacitation:
         # run through windows, abridge data as necessary
         # and output state-year-month matrix csvs
         for window in self.windows:
-            mx = self.prep_matrix(df, window)
-            mx.to_csv(
-                self.path + f"proportion_of_next_{window}_days.csv",
+            mx_cumulative = self.prep_matrix_cumulative(df, window)
+            mx_cumulative.to_csv(
+                self.path_cumulative + f"proportion_of_next_{window}_days.csv",
+                index=False,
+            )
+            mx_piecewise = self.prep_matrix_piecewise(df, window)
+            mx_piecewise.to_csv(
+                self.path_piecewise
+                + f"proportion_of_days_{window - 27}_to_{window}.csv",
                 index=False,
             )
 
@@ -127,7 +167,7 @@ class Incapacitation:
                 return i
         return None
 
-    def prep_matrix(self, df, window):
+    def prep_matrix_cumulative(self, df, window):
         """
         reformat to matrix of populations by state-year-month
         """
@@ -137,6 +177,21 @@ class Incapacitation:
         )
         matrix = aggregated.pivot(
             columns=["cycle"], index=["state"], values=f"prop_{window}"
+        ).T.reset_index()
+        return matrix
+
+    def prep_matrix_piecewise(self, df, window):
+        """
+        reformat to matrix of populations by state-year-month
+        """
+        df = df[df["first_seen"] <= self.last - td(days=window)]
+        aggregated = (
+            df.groupby(["state", "cycle"])[f"prop_{window - 27}-{window}"]
+            .mean()
+            .reset_index()
+        )
+        matrix = aggregated.pivot(
+            columns=["cycle"], index=["state"], values=f"prop_{window - 27}-{window}"
         ).T.reset_index()
         return matrix
 

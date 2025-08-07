@@ -1,12 +1,10 @@
 rosters
 AL-Autauga
 AL-Blount
-AL-Calhoun
 AL-Cherokee
 AL-Chilton
 AL-Clay
 AL-Covington
-AL-Dale
 AL-DeKalb
 AL-Etowah
 AL-Franklin
@@ -16,6 +14,8 @@ AL-Limestone
 AL-Marion
 AL-Marshall
 AL-Pickens
+AL-Pike
+AL-St_Clair
 AR-Benton
 AR-Boone
 AR-Calhoun
@@ -23,6 +23,7 @@ AR-Columbia
 AR-Craighead
 AR-Crittenden
 AR-Cross
+AR-Drew
 AR-Dumas
 AR-Franklin
 AR-Hempstead
@@ -35,13 +36,13 @@ AR-Marion
 AR-Monroe
 AR-Nevada
 AR-Newton
+AR-Poinsett
 AR-Pulaski
 AR-Randolph
 AR-Searcy
 AR-Washington
 AR-White
 AR-Yell
-AZ-Apache
 AZ-Yuma
 CA-Inyo
 CA-Kings
@@ -68,8 +69,8 @@ FL-Hamilton
 FL-Indian_River
 FL-Leon
 FL-Levy
+FL-Nassau
 FL-Okaloosa
-FL-Orange
 FL-Osceola
 FL-Pasco
 FL-Putnam
@@ -102,11 +103,13 @@ IA-Clinton
 IA-Ida
 IA-Pottawattamie
 IA-Story
+IL-Champaign
 IL-Crawford
 IL-Douglas
 IL-Kankakee
 IL-Kendall
 IL-Macon
+IL-Peoria
 IL-Will
 IL-Woodford
 IN-Boone
@@ -114,7 +117,6 @@ IN-Dearborn
 IN-Dubois
 IN-Grant
 IN-Hancock
-IN-Hendricks
 IN-Howard
 IN-Jackson
 IN-Knox
@@ -150,13 +152,11 @@ KS-Marion
 KS-McPherson
 KS-Pratt
 KS-Rooks
-KS-Shawnee
 KS-Sumner
 KS-Thomas
 KS-Wabaunsee
 KS-Wyandotte
 KY-Adair
-KY-Allen
 KY-Bell
 KY-Big_Sandy
 KY-Boone
@@ -181,8 +181,6 @@ KY-Jessamine
 KY-Kenton
 KY-Larue
 KY-Laurel
-KY-Letcher
-KY-Logan
 KY-Mason
 KY-McCracken
 KY-Montgomery
@@ -206,6 +204,8 @@ LA-Acadia
 LA-Allen
 LA-Assumption
 LA-Bossier
+LA-DeSoto
+LA-Iberville
 LA-Lafourche
 LA-Natchitoches
 LA-Ouachita
@@ -221,8 +221,6 @@ MI-Kalamazoo
 MI-Midland
 MO-Bollinger
 MO-Boone
-MO-Buchanan
-MO-Cape_Girardeau
 MO-Cedar
 MO-Cooper
 MO-Daviess
@@ -270,11 +268,10 @@ NC-Halifax
 NC-Henderson
 NC-Hoke
 NC-Iredell
-NC-Jackson
-NC-Johnston
 NC-Lincoln
 NC-Macon
 NC-McDowell
+NC-Mecklenburg
 NC-Pender
 NC-Randolph
 NC-Richmond
@@ -282,6 +279,7 @@ NC-Sampson
 NC-Transylvania
 NE-Buffalo
 NE-Cass
+NJ-Essex
 NJ-Ocean
 NJ-Salem
 NM-Dona_Ana
@@ -304,11 +302,18 @@ NY-Wayne
 NY-Yates
 OH-Adams
 OH-Allen
+OH-Brown
+OH-Darke
+OH-Greene
 OH-Hancock
+OH-Highland
 OH-Holmes
 OH-Mahoning
 OH-Ottawa
 OH-Paulding
+OH-Preble
+OH-Ross
+OH-Warren
 OH-Wood
 OH-Wyandot
 OK-Carter
@@ -333,7 +338,6 @@ OR-Marion
 OR-Multnomah
 PA-Dauphin
 PA-Greene
-SC-Anderson_City
 SC-Beaufort
 SC-Cherokee
 SC-Chester
@@ -359,6 +363,7 @@ TX-Angelina
 TX-Archer
 TX-Bell
 TX-Brazoria
+TX-Brazos
 TX-Calhoun
 TX-Clay
 TX-Coleman
@@ -369,7 +374,6 @@ TX-Jack
 TX-Jim_Wells
 TX-Kleberg
 TX-Lavaca
-TX-League_City
 TX-Mansfield
 TX-Martin
 TX-McCulloch
@@ -378,7 +382,6 @@ TX-Mills
 TX-Montgomery
 TX-Navarro
 TX-Orange
-TX-Palo_Pinto
 TX-Parmer
 TX-Polk
 TX-Reagan
@@ -391,7 +394,6 @@ TX-Tom_Green
 TX-Victoria
 TX-Washington
 TX-Young
-UT-Salt_Lake
 VA-Blue_Ridge_Amherst
 VA-Blue_Ridge_Halifax
 VA-Blue_Ridge_Lynchburg
@@ -407,6 +409,7 @@ VA-Western_Tidewater
 WA-Kitsap
 WA-Nisqually
 WI-Barron
+WI-Douglas
 WI-Marathon
 WI-Racine
 WY-Big_Horn
