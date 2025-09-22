@@ -47,6 +47,7 @@ AR-Monroe
 AR-Nevada
 AR-Newton
 AR-Poinsett
+AR-Pope
 AR-Pulaski
 AR-Randolph
 AR-Searcy
@@ -58,7 +59,6 @@ AZ-Pima
 AZ-Yuma
 CA-Fresno
 CA-Humboldt
-CA-Inyo
 CA-Kern
 CA-Kings
 CA-Marin
@@ -74,6 +74,7 @@ CA-Santa_Barbara
 CA-Santa_Cruz
 CA-Sutter
 CA-Tehama
+CA-Tulare
 CO-Adams
 CO-Arapahoe
 CO-Bent
@@ -84,7 +85,6 @@ FL-Alachua
 FL-Bradford
 FL-Broward
 FL-Clay
-FL-Columbia
 FL-DeSoto
 FL-Escambia
 FL-Flagler
@@ -105,7 +105,6 @@ FL-Suwannee
 FL-Taylor
 FL-Walton
 FL-Washington
-GA-Athens_Clarke
 GA-Bartow
 GA-Bulloch
 GA-Burke
@@ -143,7 +142,6 @@ GA-Rockdale
 GA-Sumter
 GA-Tattnall
 GA-Toombs
-GA-Troup
 GA-Union
 GA-Upson
 GA-Whitfield
@@ -159,6 +157,7 @@ IA-Pottawattamie
 IA-Scott
 IA-Sioux
 IA-Story
+IA-Woodbury
 ID-Blaine
 ID-Bonneville
 ID-Cassia
@@ -169,7 +168,6 @@ ID-Washington
 IL-Champaign
 IL-Crawford
 IL-Douglas
-IL-Kankakee
 IL-Kendall
 IL-Macon
 IL-Peoria
@@ -223,6 +221,7 @@ KS-Phillips
 KS-Pratt
 KS-Reno
 KS-Rooks
+KS-Shawnee
 KS-Sumner
 KS-Thomas
 KS-Wabaunsee
@@ -255,6 +254,7 @@ KY-Jessamine
 KY-Kenton
 KY-Larue
 KY-Laurel
+KY-Letcher
 KY-Mason
 KY-McCracken
 KY-Montgomery
@@ -344,7 +344,6 @@ MN-Clay
 MN-Clearwater
 MN-Crow_Wing
 MN-Dakota
-MN-Faribault
 MN-Houston
 MN-Kandiyohi
 MN-Lac_Qui_Parle
@@ -364,6 +363,7 @@ MN-Sibley
 MN-St_Louis
 MN-Swift
 MN-Todd
+MN-Traverse
 MN-Wadena
 MN-Watonwan
 MN-Wilkin
@@ -372,6 +372,7 @@ MN-Yellow_Medicine
 MO-Benton
 MO-Bollinger
 MO-Boone
+MO-Buchanan
 MO-Cass
 MO-Cedar
 MO-Cooper
@@ -379,6 +380,7 @@ MO-Daviess
 MO-Greene
 MO-Grundy
 MO-Howard
+MO-Johnson
 MO-Lawrence
 MO-Lewis
 MO-Marion
@@ -400,6 +402,7 @@ MS-Forrest
 MS-Hancock
 MS-Harrison
 MS-Hinds
+MS-Jackson
 MS-Jasper
 MS-Jones
 MS-Lafayette
@@ -429,7 +432,6 @@ NC-Columbus
 NC-Craven
 NC-Durham
 NC-Forsyth
-NC-Halifax
 NC-Harnett
 NC-Henderson
 NC-Hoke
@@ -448,10 +450,12 @@ NC-Transylvania
 NC-Union
 ND-Burleigh
 ND-Stutsman
+ND-Ward
 ND-Williams
 NE-Buffalo
 NE-Cass
 NE-Hall
+NE-Lincoln
 NJ-Burlington
 NJ-Cumberland
 NJ-Essex
@@ -499,6 +503,7 @@ OH-Highland
 OH-Holmes
 OH-Huron
 OH-Lake
+OH-Licking
 OH-Mahoning
 OH-Marion
 OH-Mercer
@@ -519,9 +524,11 @@ OK-Creek
 OK-Garfield
 OK-Garvin
 OK-Lincoln
+OK-Logan
 OK-Love
 OK-Mayes
 OK-Pawnee
+OK-Payne
 OK-Pottawatomie
 OK-Seminole
 OR-Baker
@@ -584,6 +591,7 @@ TX-Baytown
 TX-Bell
 TX-Brazoria
 TX-Brazos
+TX-Brown
 TX-Calhoun
 TX-Cameron
 TX-Clay
@@ -599,6 +607,7 @@ TX-Hays
 TX-Hockley
 TX-Hopkins
 TX-Howard
+TX-Hunt
 TX-Hutchinson
 TX-Jack
 TX-Jim_Wells
@@ -689,8 +698,8 @@ WI-Marathon
 WI-Racine
 WI-Rusk
 WI-St_Croix
+WV-All
 WY-Big_Horn
-WY-Goshen
 WY-Lincoln
 WY-Park
 WY-Sweetwater

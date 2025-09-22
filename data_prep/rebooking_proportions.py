@@ -22,6 +22,11 @@ class RebookingProportions:
                 f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov"
                 f"/rebookings/"
             )
+        elif self.args.charges:
+            self.path = (
+                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1"
+                f"/rebookings/"
+            )
         else:
             self.path = (
                 f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
@@ -51,6 +56,14 @@ class RebookingProportions:
                     )["rosters"].unique()
                 )
             )
+        elif self.args.charges:
+            rosters = sorted(
+                list(
+                    pd.read_csv(
+                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
+                    )["rosters"].unique()
+                )
+            )
         else:
             rosters = sorted(
                 list(
@@ -67,12 +80,27 @@ class RebookingProportions:
 
         # run through windows, abridge data as necessary
         # and output state-year-month matrix csvs
-        for window in self.windows:
-            mx = self.prep_matrix(df, window)
-            mx.to_csv(
-                self.path + f"within_{window}_days.csv",
-                index=False,
-            )
+        if self.args.charges:
+            for charge in df["charge"].unique():
+                tmp = df[df["charge"] == charge]
+                for window in self.windows:
+                    mx = self.prep_matrix(tmp, window)
+                    if not os.path.exists(
+                        self.path + f"{charge.lower().replace(' ', '_')}"
+                    ):
+                        os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}")
+                    mx.to_csv(
+                        self.path
+                        + f"{charge.lower().replace(' ', '_')}/within_{window}_days.csv",
+                        index=False,
+                    )
+        else:
+            for window in self.windows:
+                mx = self.prep_matrix(df, window)
+                mx.to_csv(
+                    self.path + f"within_{window}_days.csv",
+                    index=False,
+                )
 
     def get_bookings(self, roster):
         """
@@ -85,6 +113,8 @@ class RebookingProportions:
             "meta.County": county,
             "meta.first_seen": {"$gte": self.first, "$lte": self.last},
         }
+        if self.args.charges:
+            match.update({"Top_Charge": {"$exists": True}})
         query = {
             "_id": 0,
             "id_booking": "$_id",
@@ -94,7 +124,9 @@ class RebookingProportions:
             "state": "$meta.State",
             "county": "$meta.County",
             "first_seen": "$meta.first_seen",
+            "charge": "$Top_Charge",
         }
+
         return list(self.dbs.bookings.find(match, query))
 
     def apply_exclusions(self, df):

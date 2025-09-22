@@ -15,6 +15,16 @@ START_GA = dt(2024, 7, 1, 0, 0)
 CYCLE = 28
 
 
+L1 = [
+    "Violent",
+    "Property",
+    "Drug",
+    "Public Order",
+    "DUI Offense",
+    "Criminal traffic",
+]
+
+
 class MongoCollections:
     def __init__(self):
         load_dotenv()
@@ -121,6 +131,15 @@ def get_parser():
         help="""
             If specified, get list of rosters at intersection of
             demographic availabilities, e.g., has race, gender, etc.
+            (used in `get_roster_list.py`).
+        """,
+    )
+    parser.add_argument(
+        "-c",
+        "--charges",
+        action="store_true",
+        help="""
+            If specified, get list of rosters with charge types available
             (used in `get_roster_list.py`).
         """,
     )

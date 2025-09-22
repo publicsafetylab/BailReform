@@ -31,6 +31,15 @@ class Incapacitation:
                 f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov"
                 f"/incapacitation_cumulative/"
             )
+        elif self.args.charges:
+            self.path_piecewise = (
+                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1"
+                f"/incapacitation_piecewise/"
+            )
+            self.path_cumulative = (
+                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1"
+                f"/incapacitation_cumulative/"
+            )
         else:
             self.path_piecewise = (
                 f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
@@ -73,6 +82,14 @@ class Incapacitation:
                     )["rosters"].unique()
                 )
             )
+        elif self.args.charges:
+            rosters = sorted(
+                list(
+                    pd.read_csv(
+                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
+                    )["rosters"].unique()
+                )
+            )
         else:
             rosters = sorted(
                 list(
@@ -112,18 +129,47 @@ class Incapacitation:
 
         # run through windows, abridge data as necessary
         # and output state-year-month matrix csvs
-        for window in self.windows:
-            mx_cumulative = self.prep_matrix_cumulative(df, window)
-            mx_cumulative.to_csv(
-                self.path_cumulative + f"proportion_of_next_{window}_days.csv",
-                index=False,
-            )
-            mx_piecewise = self.prep_matrix_piecewise(df, window)
-            mx_piecewise.to_csv(
-                self.path_piecewise
-                + f"proportion_of_days_{window - 27}_to_{window}.csv",
-                index=False,
-            )
+        if self.args.charges:
+            for charge in df["charge"].unique():
+                tmp = df[df["charge"] == charge]
+                for window in self.windows:
+                    mx_cumulative = self.prep_matrix_cumulative(tmp, window)
+                    if not os.path.exists(
+                        self.path_cumulative + f"{charge.lower().replace(' ', '_')}"
+                    ):
+                        os.makedirs(
+                            self.path_cumulative + f"{charge.lower().replace(' ', '_')}"
+                        )
+                    mx_cumulative.to_csv(
+                        self.path_cumulative
+                        + f"{charge.lower().replace(' ', '_')}/proportion_of_next_{window}_days.csv",
+                        index=False,
+                    )
+                    mx_piecewise = self.prep_matrix_piecewise(tmp, window)
+                    if not os.path.exists(
+                        self.path_piecewise + f"{charge.lower().replace(' ', '_')}"
+                    ):
+                        os.makedirs(
+                            self.path_piecewise + f"{charge.lower().replace(' ', '_')}"
+                        )
+                    mx_piecewise.to_csv(
+                        self.path_piecewise
+                        + f"{charge.lower().replace(' ', '_')}/proportion_of_days_{window - 27}_to_{window}.csv",
+                        index=False,
+                    )
+        else:
+            for window in self.windows:
+                mx_cumulative = self.prep_matrix_cumulative(df, window)
+                mx_cumulative.to_csv(
+                    self.path_cumulative + f"proportion_of_next_{window}_days.csv",
+                    index=False,
+                )
+                mx_piecewise = self.prep_matrix_piecewise(df, window)
+                mx_piecewise.to_csv(
+                    self.path_piecewise
+                    + f"proportion_of_days_{window - 27}_to_{window}.csv",
+                    index=False,
+                )
 
     def get_bookings(self, roster):
         """
@@ -136,6 +182,8 @@ class Incapacitation:
             "meta.County": county,
             "meta.first_seen": {"$gte": self.first, "$lte": self.last},
         }
+        if self.args.charges:
+            match.update({"Top_Charge": {"$exists": True}})
         query = {
             "_id": 0,
             "id_booking": "$_id",
@@ -146,6 +194,7 @@ class Incapacitation:
             "county": "$meta.County",
             "first_seen": "$meta.first_seen",
             "last_seen": "$meta.last_seen",
+            "charge": "$Top_Charge",
         }
         return list(self.dbs.bookings.find(match, query))
 

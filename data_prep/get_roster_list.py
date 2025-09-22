@@ -20,6 +20,8 @@ class GetRosters:
     def run(self):
         if self.args.demographics:
             rosters = self.get_viable_rosters_demographics()
+        elif self.args.charges:
+            rosters = self.get_viable_rosters_charges()
         else:
             rosters = self.get_viable_rosters()
 
@@ -27,6 +29,8 @@ class GetRosters:
             df = pd.DataFrame(rosters, columns=["rosters"])
             if self.args.demographics:
                 df.to_csv(self.path + "rosters_demographics.csv", index=False)
+            elif self.args.charges:
+                df.to_csv(self.path + "rosters_charges.csv", index=False)
             else:
                 df.to_csv(self.path + "rosters.csv", index=False)
 
@@ -87,7 +91,7 @@ class GetRosters:
 
     def get_demographics(self, roster):
         """
-        TODO: fill in
+        TODO: fill in...
         """
         state, county = roster.split("-", 1)
         match = {
@@ -116,6 +120,47 @@ class GetRosters:
             "num_charges": {
                 "$size": {"$cond": [{"$isArray": "$Charges"}, "$Charges", []]}
             },
+        }
+        return list(self.dbs.bookings.find(match, query))
+
+    def get_viable_rosters_charges(self):
+        """
+        collects list of rosters by id
+        with format `"_id": "{state abbreviation}-{county}"`,
+        e.g., "AL-Autauga", that meet inclusion criteria:
+        rosters for which bookings contain
+        at least one non-missing/unknown value of
+        the `Top_Charge` field.
+        """
+        rosters = self.get_viable_rosters()
+        bookings = thread(self.get_charges, rosters)
+        df = pd.DataFrame(bookings)
+        df["roster"] = df["state"] + "-" + df["county"]
+        df = df[df["top_charge"].notna()]
+        df = df[df["top_charge"] != "TBD"]
+        return sorted(list(df["roster"].unique()))
+
+    def get_charges(self, roster):
+        """
+        TODO: fill in...
+        """
+        state, county = roster.split("-", 1)
+        match = {
+            "meta.State": state,
+            "meta.County": county,
+            "meta.first_seen": {"$gte": self.first, "$lte": self.last},
+            "Top_Charge": {"$exists": True},
+        }
+        query = {
+            "_id": 0,
+            "id_booking": "$_id",
+            "id_person": "$meta.jdi_inmate_id",
+            "flags": "$meta.flags",
+            "id_roster": "$meta.Jail_ID",
+            "state": "$meta.State",
+            "county": "$meta.County",
+            "first_seen": "$meta.first_seen",
+            "top_charge": "$Top_Charge",
         }
         return list(self.dbs.bookings.find(match, query))
 

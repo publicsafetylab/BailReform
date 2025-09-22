@@ -23,6 +23,8 @@ class LOS:
         self.last = max([t[2] for t in self.cycles])
         if self.args.demographics:
             self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov/los/"
+        elif self.args.charges:
+            self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1/los/"
         else:
             self.path = (
                 f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
@@ -43,6 +45,14 @@ class LOS:
                     )["rosters"].unique()
                 )
             )
+        elif self.args.charges:
+            rosters = sorted(
+                list(
+                    pd.read_csv(
+                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
+                    )["rosters"].unique()
+                )
+            )
         else:
             rosters = sorted(
                 list(
@@ -60,11 +70,25 @@ class LOS:
         df["los"] = (df["last_seen"] - df["first_seen"]).dt.days + 1
         df["los_indicator"] = df["los"].apply(lambda i: self.indicate(i))
 
-        mx = self.prep_matrix(df)
-        mx.to_csv(
-            self.path + f"cutoff_{self.los_cutoff}_days.csv",
-            index=False,
-        )
+        if self.args.charges:
+            for charge in df["charge"].unique():
+                tmp = df[df["charge"] == charge]
+                mx = self.prep_matrix(tmp)
+                if not os.path.exists(
+                    self.path + f"{charge.lower().replace(' ', '_')}"
+                ):
+                    os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}")
+                mx.to_csv(
+                    self.path
+                    + f"{charge.lower().replace(' ', '_')}/cutoff_{self.los_cutoff}_days.csv",
+                    index=False,
+                )
+        else:
+            mx = self.prep_matrix(df)
+            mx.to_csv(
+                self.path + f"cutoff_{self.los_cutoff}_days.csv",
+                index=False,
+            )
 
     def get_bookings(self, roster):
         """
@@ -77,6 +101,8 @@ class LOS:
             "meta.County": county,
             "meta.first_seen": {"$gte": self.first, "$lte": self.last},
         }
+        if self.args.charges:
+            match.update({"Top_Charge": {"$exists": True}})
         query = {
             "_id": 0,
             "id_booking": "$_id",
@@ -87,6 +113,7 @@ class LOS:
             "county": "$meta.County",
             "first_seen": "$meta.first_seen",
             "last_seen": "$meta.last_seen",
+            "charge": "$Top_Charge",
         }
         return list(self.dbs.bookings.find(match, query))
 

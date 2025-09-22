@@ -37,6 +37,7 @@ AR-Monroe
 AR-Nevada
 AR-Newton
 AR-Poinsett
+AR-Pope
 AR-Pulaski
 AR-Randolph
 AR-Searcy
@@ -44,7 +45,6 @@ AR-Washington
 AR-White
 AR-Yell
 AZ-Yuma
-CA-Inyo
 CA-Kings
 CA-Marin
 CA-Mariposa
@@ -56,12 +56,12 @@ CA-San_Mateo
 CA-Santa_Cruz
 CA-Sutter
 CA-Tehama
+CA-Tulare
 CO-Jefferson
 CO-Pueblo
 FL-Alachua
 FL-Bradford
 FL-Clay
-FL-Columbia
 FL-DeSoto
 FL-Escambia
 FL-Flagler
@@ -79,7 +79,6 @@ FL-Suwannee
 FL-Taylor
 FL-Walton
 FL-Washington
-GA-Athens_Clarke
 GA-Bartow
 GA-Catoosa
 GA-Cobb
@@ -97,7 +96,6 @@ GA-Paulding
 GA-Pickens
 GA-Rockdale
 GA-Toombs
-GA-Troup
 GA-Whitfield
 IA-Clinton
 IA-Ida
@@ -106,7 +104,6 @@ IA-Story
 IL-Champaign
 IL-Crawford
 IL-Douglas
-IL-Kankakee
 IL-Kendall
 IL-Macon
 IL-Peoria
@@ -152,6 +149,7 @@ KS-Marion
 KS-McPherson
 KS-Pratt
 KS-Rooks
+KS-Shawnee
 KS-Sumner
 KS-Thomas
 KS-Wabaunsee
@@ -181,6 +179,7 @@ KY-Jessamine
 KY-Kenton
 KY-Larue
 KY-Laurel
+KY-Letcher
 KY-Mason
 KY-McCracken
 KY-Montgomery
@@ -221,11 +220,13 @@ MI-Kalamazoo
 MI-Midland
 MO-Bollinger
 MO-Boone
+MO-Buchanan
 MO-Cedar
 MO-Cooper
 MO-Daviess
 MO-Greene
 MO-Howard
+MO-Johnson
 MO-Lawrence
 MO-McDonald
 MO-Monroe
@@ -242,6 +243,7 @@ MS-Forrest
 MS-Hancock
 MS-Harrison
 MS-Hinds
+MS-Jackson
 MS-Jasper
 MS-Jones
 MS-Lafayette
@@ -264,7 +266,6 @@ NC-Cherokee
 NC-Cleveland
 NC-Columbus
 NC-Forsyth
-NC-Halifax
 NC-Henderson
 NC-Hoke
 NC-Iredell
@@ -320,9 +321,11 @@ OK-Carter
 OK-Comanche
 OK-Creek
 OK-Lincoln
+OK-Logan
 OK-Love
 OK-Mayes
 OK-Pawnee
+OK-Payne
 OK-Pottawatomie
 OR-Baker
 OR-Benton
@@ -364,11 +367,13 @@ TX-Archer
 TX-Bell
 TX-Brazoria
 TX-Brazos
+TX-Brown
 TX-Calhoun
 TX-Clay
 TX-Coleman
 TX-Hardin
 TX-Hays
+TX-Hunt
 TX-Hutchinson
 TX-Jack
 TX-Jim_Wells
@@ -412,6 +417,6 @@ WI-Barron
 WI-Douglas
 WI-Marathon
 WI-Racine
+WV-All
 WY-Big_Horn
-WY-Goshen
 WY-Park
