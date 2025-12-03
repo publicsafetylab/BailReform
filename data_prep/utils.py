@@ -72,6 +72,8 @@ def get_cycles(self):
 
 def get_parser():
     parser = argparse.ArgumentParser()
+
+    # date range and geographic sample restriction arguments
     parser.add_argument(
         "-s",
         "--state",
@@ -84,27 +86,7 @@ def get_parser():
             """,
     )
     parser.add_argument(
-        "-f",
-        "--first",
-        type=str,
-        default="2023-01-01",
-        help="""
-            Earliest date from which to collect admissions 
-            (defaults to 2023-01-01).
-            """,
-    )
-    parser.add_argument(
-        "-l",
-        "--last",
-        type=str,
-        default=dt.strftime(dt.now().replace(day=1) - td(days=1), "%Y-%m-%d"),
-        help="""
-            Latest date from which to collect admissions 
-            (defaults to last day of previous month).
-            """,
-    )
-    parser.add_argument(
-        "-t",
+        "-m",
         "--threshold",
         type=float,
         default=0.75,
@@ -120,29 +102,55 @@ def get_parser():
         default=list(),
         nargs="*",
         help="""
-            Exclude any admissions from specified list of states
-            (specify as, e.g., `AL AR ...`).
-            """,
+                Exclude any admissions from specified list of states
+                (specify as, e.g., `AL AR ...`).
+                """,
     )
     parser.add_argument(
-        "-d",
-        "--demographics",
-        action="store_true",
+        "-f",
+        "--first",
+        type=str,
+        default="2023-01-01",
         help="""
-            If specified, get list of rosters at intersection of
-            demographic availabilities, e.g., has race, gender, etc.
-            (used in `get_roster_list.py`).
+                Earliest date from which to collect admissions 
+                (defaults to 2023-01-01).
+                """,
+    )
+    parser.add_argument(
+        "-l",
+        "--last",
+        type=str,
+        default=dt.strftime(dt.now().replace(day=1) - td(days=1), "%Y-%m-%d"),
+        help="""
+                Latest date from which to collect admissions 
+                (defaults to last day of previous month).
+                """,
+    )
+
+    # covariate completeness sample restriction arguments
+    parser.add_argument(
+        "-r",
+        "--sample",
+        type=str,
+        default="all",
+        choices=["all", "charges", "demographics"],
+        help="""
+                Specifies the roster sample for which to produce matrices
+                (all rosters, those including charge data, 
+                or those including demographic and charge data).
         """,
     )
     parser.add_argument(
-        "-c",
-        "--charges",
+        "-btc",
+        "--by_top_charge",
         action="store_true",
         help="""
-            If specified, get list of rosters with charge types available
-            (used in `get_roster_list.py`).
+            If specified, break out results matrices by top L1 charge
+            (note: this can only be done ofr the charges and demographic samples).
         """,
     )
+
+    # specific flag for saving roster samples
     parser.add_argument(
         "--save",
         action="store_true",
@@ -201,3 +209,73 @@ def thread(worker, jobs, threads=5):
     pool.join()
     if results:
         return results
+
+
+def get_roster_sample(self):
+    if self.args.sample == "demographics":
+        return sorted(
+            list(
+                pd.read_csv(
+                    f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_demographics.csv"
+                )["rosters"].unique()
+            )
+        )
+    elif self.args.sample == "charges":
+        return sorted(
+            list(
+                pd.read_csv(
+                    f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
+                )["rosters"].unique()
+            )
+        )
+    elif self.args.sample == "all":
+        return sorted(
+            list(
+                pd.read_csv(
+                    f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters.csv"
+                )["rosters"].unique()
+            )
+        )
+
+
+def get_path_prefix(self):
+    path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/"
+    if self.args.sample == "demographics":
+        path += "demographics/"
+    elif self.args.sample == "charges":
+        path += "charges/"
+    elif self.args.sample == "all":
+        path += "all/"
+    if self.args.sample in ["demographics", "charges"]:
+        if self.args.by_top_charge:
+            path += "by_top_charge/"
+        else:
+            path += "all_charges/"
+    elif self.args.by_top_charge:
+        raise ValueError(
+            "if using [-btc, --by_top_charge] argument, "
+            "please select a roster sample [-r, --sample] from {charges, demographics}"
+        )
+    else:
+        path += "all_charges/"
+    return path
+
+
+def find_date_range(self, date):
+    for i, start_date, end_date in self.cycles:
+        if start_date <= date <= end_date:
+            return i
+    return None
+
+
+def apply_exclusions(self, df):
+    """
+    reduce set of bookings based on exclusion criteria
+    (specific flags, type issues with `id_person`, etc.)
+    """
+    df["flags"] = df["flags"].astype(str)
+    for flag in self.flags:
+        df = df[~df["flags"].str.contains(flag)]
+    del df["flags"]
+    df = df[df["id_person"].notna()]
+    return df[~df["id_person"].apply(lambda o: isinstance(o, list))]

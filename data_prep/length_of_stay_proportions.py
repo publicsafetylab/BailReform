@@ -21,15 +21,9 @@ class LOS:
         self.cycles = get_cycles(self)
         self.first = min([t[1] for t in self.cycles])
         self.last = max([t[2] for t in self.cycles])
-        if self.args.demographics:
-            self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov/los/"
-        elif self.args.charges:
-            self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1/los/"
-        else:
-            self.path = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
-                f"/los/"
-            )
+        self.path = get_path_prefix(self)
+        if not self.args.by_top_charge:
+            self.path += "los/"
         for i, piece in enumerate(self.path.split("/")[1:-1]):
             if not os.path.exists(
                 "../" + "/".join(self.path.split("/")[1:-1][: i + 1])
@@ -37,58 +31,43 @@ class LOS:
                 os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
 
     def run(self):
-        if self.args.demographics:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_demographics.csv"
-                    )["rosters"].unique()
-                )
-            )
-        elif self.args.charges:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
-                    )["rosters"].unique()
-                )
-            )
-        else:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters.csv"
-                    )["rosters"].unique()
-                )
-            )
+        rosters = get_roster_sample(self)
 
+        # get los for sample
         df = pd.DataFrame(thread(self.get_bookings, rosters))
-        df = self.apply_exclusions(df)
-
-        df["cycle"] = df["first_seen"].apply(lambda date: self.find_date_range(date))
-
+        df = apply_exclusions(self, df)
+        df["cycle"] = df["first_seen"].apply(lambda date: find_date_range(self, date))
         df["los"] = (df["last_seen"] - df["first_seen"]).dt.days + 1
         df["los_indicator"] = df["los"].apply(lambda i: self.indicate(i))
 
-        if self.args.charges:
-            for charge in df["charge"].unique():
-                tmp = df[df["charge"] == charge]
-                mx = self.prep_matrix(tmp)
-                if not os.path.exists(
-                    self.path + f"{charge.lower().replace(' ', '_')}"
-                ):
-                    os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}")
-                mx.to_csv(
-                    self.path
-                    + f"{charge.lower().replace(' ', '_')}/cutoff_{self.los_cutoff}_days.csv",
-                    index=False,
-                )
-        else:
+        # if no top charge specified, get overall los
+        if not self.args.by_top_charge:
             mx = self.prep_matrix(df)
             mx.to_csv(
                 self.path + f"cutoff_{self.los_cutoff}_days.csv",
                 index=False,
             )
+
+        # otherwise, handle per-top-charge splits
+        else:
+            for charge in L1:
+                res = df[df["charge"] == charge]
+                mx = self.prep_matrix(res)
+
+                # save output matrix to charge-specific path
+                if not os.path.exists(
+                    self.path + f"{charge.lower().replace(' ', '_')}"
+                ):
+                    os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}")
+                if not os.path.exists(
+                    self.path + f"{charge.lower().replace(' ', '_')}/los"
+                ):
+                    os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}/los")
+                mx.to_csv(
+                    self.path
+                    + f"{charge.lower().replace(' ', '_')}/los/cutoff_{self.los_cutoff}_days.csv",
+                    index=False,
+                )
 
     def get_bookings(self, roster):
         """
@@ -101,7 +80,7 @@ class LOS:
             "meta.County": county,
             "meta.first_seen": {"$gte": self.first, "$lte": self.last},
         }
-        if self.args.charges:
+        if self.args.by_top_charge:
             match.update({"Top_Charge": {"$exists": True}})
         query = {
             "_id": 0,
@@ -116,24 +95,6 @@ class LOS:
             "charge": "$Top_Charge",
         }
         return list(self.dbs.bookings.find(match, query))
-
-    def apply_exclusions(self, df):
-        """
-        reduce set of bookings based on exclusion criteria
-        (specific flags, type issues with `id_person`, etc.)
-        """
-        df["flags"] = df["flags"].astype(str)
-        for flag in self.flags:
-            df = df[~df["flags"].str.contains(flag)]
-        del df["flags"]
-        df = df[df["id_person"].notna()]
-        return df[~df["id_person"].apply(lambda o: isinstance(o, list))]
-
-    def find_date_range(self, date):
-        for i, start_date, end_date in self.cycles:
-            if start_date <= date <= end_date:
-                return i
-        return None
 
     def indicate(self, i):
         if i > self.los_cutoff:

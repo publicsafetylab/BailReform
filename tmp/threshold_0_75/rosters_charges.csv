@@ -1,5 +1,4 @@
 rosters
-AL-Autauga
 AL-Blount
 AL-Cherokee
 AL-Chilton
@@ -53,18 +52,14 @@ AR-Yell
 AZ-Yuma
 CA-Kern
 CA-Kings
-CA-Marin
 CA-Mariposa
 CA-Mendocino
 CA-Merced
-CA-Mono
 CA-Monterey
-CA-Napa
 CA-San_Mateo
 CA-Santa_Cruz
 CA-Sutter
 CA-Tehama
-CA-Tulare
 CO-Arapahoe
 CO-Bent
 CO-Jefferson
@@ -77,11 +72,9 @@ FL-Clay
 FL-DeSoto
 FL-Escambia
 FL-Flagler
-FL-Hamilton
 FL-Indian_River
 FL-Leon
 FL-Levy
-FL-Monroe
 FL-Nassau
 FL-Okaloosa
 FL-Osceola
@@ -108,12 +101,10 @@ GA-Douglas
 GA-Effingham
 GA-Floyd
 GA-Gordon
-GA-Habersham
 GA-Hall
 GA-Haralson
 GA-Houston
 GA-Jackson
-GA-Lamar
 GA-Liberty
 GA-Lumpkin
 GA-Madison
@@ -141,7 +132,6 @@ IA-Linn
 IA-Osceola
 IA-Pottawattamie
 IA-Scott
-IA-Sioux
 IA-Story
 ID-Elmore
 ID-Power
@@ -269,7 +259,6 @@ LA-St_John
 LA-Terrebonne
 MD-Allegany
 MD-Dorchester
-ME-Penobscot
 MI-Berrien
 MI-Isabella
 MI-Kalamazoo
@@ -282,6 +271,7 @@ MN-Clearwater
 MN-Crow_Wing
 MN-Dakota
 MN-Houston
+MN-Isanti
 MN-Kandiyohi
 MN-Lac_Qui_Parle
 MN-Le_Sueur
@@ -342,7 +332,6 @@ MS-Madison
 MS-Marion
 MS-Perry
 MS-Tunica
-MT-Big_Horn
 MT-Broadwater
 MT-Flathead
 MT-Gallatin
@@ -361,12 +350,15 @@ NC-Cherokee
 NC-Cleveland
 NC-Columbus
 NC-Craven
+NC-Cumberland
 NC-Durham
 NC-Forsyth
+NC-Halifax
 NC-Harnett
 NC-Henderson
 NC-Hoke
 NC-Iredell
+NC-Johnston
 NC-Lincoln
 NC-Macon
 NC-McDowell
@@ -379,7 +371,6 @@ NC-Transylvania
 ND-Burleigh
 ND-Stutsman
 ND-Williams
-NE-Buffalo
 NE-Cass
 NE-Lincoln
 NJ-Cumberland
@@ -391,7 +382,6 @@ NM-Dona_Ana
 NM-San_Juan
 NM-Socorro
 NV-Clark
-NV-Clark_Henderson
 NV-Nye
 NV-Washoe
 NY-Delaware
@@ -426,6 +416,7 @@ OH-Licking
 OH-Mahoning
 OH-Marion
 OH-Mercer
+OH-Montgomery
 OH-Morrow
 OH-Ottawa
 OH-Paulding
@@ -447,6 +438,7 @@ OK-Pawnee
 OK-Payne
 OK-Pottawatomie
 OK-Seminole
+OK-Tulsa
 OR-Baker
 OR-Benton
 OR-Clatsop
@@ -497,14 +489,12 @@ TN-Sullivan
 TX-Andrews
 TX-Angelina
 TX-Aransas
-TX-Archer
 TX-Bell
 TX-Brazoria
 TX-Brazos
 TX-Brown
 TX-Calhoun
 TX-Cameron
-TX-Clay
 TX-Coleman
 TX-Denton
 TX-Ector
@@ -519,14 +509,13 @@ TX-Hopkins
 TX-Howard
 TX-Hunt
 TX-Hutchinson
-TX-Jack
 TX-Jim_Wells
+TX-Kendall
 TX-Kerr
 TX-Kleberg
 TX-Lavaca
 TX-Mansfield
 TX-Martin
-TX-McCulloch
 TX-Midland
 TX-Milam
 TX-Mills
@@ -534,11 +523,10 @@ TX-Montgomery
 TX-Nacogdoches
 TX-Navarro
 TX-Orange
+TX-Palo_Pinto
 TX-Parmer
 TX-Polk
-TX-Reagan
 TX-Red_River
-TX-Runnels
 TX-Rusk
 TX-Terry
 TX-Titus
@@ -556,6 +544,7 @@ VA-Blue_Ridge_Lynchburg
 VA-Chesapeake
 VA-Henrico
 VA-New_River_Valley
+VA-Northern_Neck
 VA-Pamunkey
 VA-Riverside
 VA-Roanoke
@@ -568,9 +557,6 @@ VA-Western_Virginia
 WA-Chelan
 WA-Clallam
 WA-Cowlitz
-WA-Grays_Harbor
-WA-Grays_Harbor_Aberdeen
-WA-Grays_Harbor_Hoquiam
 WA-Jefferson
 WA-King_Des_Moines
 WA-King_Enumclaw
@@ -579,7 +565,6 @@ WA-King_Kent
 WA-King_Kirkland
 WA-Kitsap
 WA-Kittitas
-WA-Lewis
 WA-Lincoln
 WA-Nisqually
 WA-Pacific
@@ -597,7 +582,5 @@ WI-Marathon
 WI-Racine
 WI-St_Croix
 WV-All
-WY-Big_Horn
 WY-Lincoln
-WY-Park
 WY-Sweetwater

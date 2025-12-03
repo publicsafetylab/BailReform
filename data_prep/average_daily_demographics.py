@@ -13,7 +13,9 @@ class ADD:
         self.first = min([t[1] for t in self.cycles])
         self.last = max([t[2] for t in self.cycles])
         self.flags = ["non_distinct_jdi_inmate_id"]
-        self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov/add/"
+        self.path = get_path_prefix(self)
+        if not self.args.by_top_charge:
+            self.path += "add/"
         for i, piece in enumerate(self.path.split("/")[1:-1]):
             if not os.path.exists(
                 "../" + "/".join(self.path.split("/")[1:-1][: i + 1])
@@ -21,28 +23,27 @@ class ADD:
                 os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
 
     def run(self):
-        rosters = sorted(
-            list(
-                pd.read_csv(
-                    f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_demographics.csv"
-                )["rosters"].unique()
-            )
-        )
-
+        rosters = get_roster_sample(self)
         df = pd.DataFrame(thread(self.get_demographics, rosters))
-        df = self.apply_exclusions(df)
-
-        df["cycle"] = df["first_seen"].apply(lambda date: self.find_date_range(date))
-
+        df = apply_exclusions(self, df)
+        df["cycle"] = df["first_seen"].apply(lambda date: find_date_range(self, date))
         df = self.reduce_demographics(df)
 
-        for field in ["race", "gender", "top_charge"]:
-            self.prep_categorical_matrix(df, field)
+        if not self.args.by_top_charge:
+            for field in ["race", "gender", "top_charge"]:
+                self.prep_categorical_matrix(df, field)
+            for field in ["age", "num_charges"]:
+                self.prep_numerical_matrix(df, field)
 
-        for field in ["age", "num_charges"]:
-            self.prep_numerical_matrix(df, field)
+        else:
+            for charge in L1:
+                tmp = df[df["top_charge"] == charge]
+                for field in ["race", "gender", "top_charge"]:
+                    self.prep_categorical_matrix(tmp, field, charge)
+                for field in ["age", "num_charges"]:
+                    self.prep_numerical_matrix(tmp, field, charge)
 
-    def prep_categorical_matrix(self, df, field):
+    def prep_categorical_matrix(self, df, field, top_charge=None):
         df_all = (
             df.groupby(["state", "cycle"])
             .size()
@@ -89,15 +90,32 @@ class ADD:
                     columns=["cycle"], index=["state"], values=col
                 ).T.reset_index()
 
-                if not os.path.exists(f"{self.path}{field}/"):
-                    os.mkdir(f"{self.path}{field}/")
+                if not top_charge:
+                    if not os.path.exists(f"{self.path}{field}/"):
+                        os.mkdir(f"{self.path}{field}/")
+                    mx_out.to_csv(
+                        f"{self.path}{field}/{col}.csv",
+                        index=False,
+                    )
+                else:
+                    if not os.path.exists(
+                        f"{self.path}{top_charge.lower().replace(' ', '_')}/add/"
+                    ):
+                        os.mkdir(
+                            f"{self.path}{top_charge.lower().replace(' ', '_')}/add/"
+                        )
+                    if not os.path.exists(
+                        f"{self.path}{top_charge.lower().replace(' ', '_')}/add/{field}/"
+                    ):
+                        os.mkdir(
+                            f"{self.path}{top_charge.lower().replace(' ', '_')}/add/{field}/"
+                        )
+                    mx_out.to_csv(
+                        f"{self.path}/{top_charge.lower().replace(' ', '_')}/add/{field}/{col}.csv",
+                        index=False,
+                    )
 
-                mx_out.to_csv(
-                    f"{self.path}{field}/{col}.csv",
-                    index=False,
-                )
-
-    def prep_numerical_matrix(self, df, field):
+    def prep_numerical_matrix(self, df, field, top_charge=None):
         mx_mean = (
             df.groupby(["state", "cycle"])[field]
             .mean()
@@ -117,13 +135,28 @@ class ADD:
                 columns=["cycle"], index=["state"], values=col
             ).T.reset_index()
 
-            if not os.path.exists(f"{self.path}{field}/"):
-                os.mkdir(f"{self.path}{field}/")
-
-            mx_out.to_csv(
-                f"{self.path}{field}/{col}.csv",
-                index=False,
-            )
+            if not top_charge:
+                if not os.path.exists(f"{self.path}{field}/"):
+                    os.mkdir(f"{self.path}{field}/")
+                mx_out.to_csv(
+                    f"{self.path}{field}/{col}.csv",
+                    index=False,
+                )
+            else:
+                if not os.path.exists(
+                    f"{self.path}{top_charge.lower().replace(' ', '_')}/add/"
+                ):
+                    os.mkdir(f"{self.path}{top_charge.lower().replace(' ', '_')}/add/")
+                if not os.path.exists(
+                    f"{self.path}{top_charge.lower().replace(' ', '_')}/add/{field}/"
+                ):
+                    os.mkdir(
+                        f"{self.path}{top_charge.lower().replace(' ', '_')}/add/{field}/"
+                    )
+                mx_out.to_csv(
+                    f"{self.path}/{top_charge.lower().replace(' ', '_')}/add/{field}/{col}.csv",
+                    index=False,
+                )
 
     @staticmethod
     def reduce_demographics(df):
@@ -134,39 +167,11 @@ class ADD:
             df["gender"].isin(["Trans", "Nonbinary"]), "Unknown Gender", df["gender"]
         )
         df["top_charge"] = np.where(
-            df["top_charge"].isin(
-                [
-                    "Violent",
-                    "Property",
-                    "Drug",
-                    "Public Order",
-                    "DUI Offense",
-                    "Criminal traffic",
-                ]
-            ),
+            df["top_charge"].isin(L1),
             df["top_charge"],
             "Unknown Top Charge",
         )
-
         return df
-
-    def apply_exclusions(self, df):
-        """
-        reduce set of bookings based on exclusion criteria
-        (specific flags, type issues with `id_person`, etc.)
-        """
-        df["flags"] = df["flags"].astype(str)
-        for flag in self.flags:
-            df = df[~df["flags"].str.contains(flag)]
-        del df["flags"]
-        df = df[df["id_person"].notna()]
-        return df[~df["id_person"].apply(lambda o: isinstance(o, list))]
-
-    def find_date_range(self, date):
-        for i, start_date, end_date in self.cycles:
-            if start_date <= date <= end_date:
-                return i
-        return None
 
     def get_demographics(self, roster):
         """

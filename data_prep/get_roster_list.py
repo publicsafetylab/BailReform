@@ -18,18 +18,18 @@ class GetRosters:
                 os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
 
     def run(self):
-        if self.args.demographics:
+        if self.args.sample == "demographics":
             rosters = self.get_viable_rosters_demographics()
-        elif self.args.charges:
+        elif self.args.sample == "charges":
             rosters = self.get_viable_rosters_charges()
         else:
             rosters = self.get_viable_rosters()
 
         if args.save:
             df = pd.DataFrame(rosters, columns=["rosters"])
-            if self.args.demographics:
+            if self.args.sample == "demographics":
                 df.to_csv(self.path + "rosters_demographics.csv", index=False)
-            elif self.args.charges:
+            elif self.args.sample == "charges":
                 df.to_csv(self.path + "rosters_charges.csv", index=False)
             else:
                 df.to_csv(self.path + "rosters.csv", index=False)
@@ -83,6 +83,7 @@ class GetRosters:
         df["roster"] = df["state"] + "-" + df["county"]
         df = df[df["race"] != "Unknown Race"]
         df = df[df["gender"] != "Unknown Gender"]
+        df = df[df["top_charge"].notna()]
         df = df[df["top_charge"] != "TBD"]
         df = df[df["age"].notna()]
         df = df[df["age"] != "Unknown Age"]

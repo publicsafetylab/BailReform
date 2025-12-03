@@ -16,91 +16,121 @@ class RebookingProportions:
         self.cycles = get_cycles(self)
         self.first = min([t[1] for t in self.cycles])
         self.last = max([t[2] for t in self.cycles])
-        self.path = f"../matrices/{self.args.state}/rebookings/threshold_{str(self.args.threshold).replace('.', '_')}/"
-        if self.args.demographics:
-            self.path = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov"
-                f"/rebookings/"
-            )
-        elif self.args.charges:
-            self.path = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1"
-                f"/rebookings/"
-            )
-        else:
-            self.path = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
-                f"/rebookings/"
-            )
+
+        self.path = get_path_prefix(self)
+        if not self.args.by_top_charge and not self.args.by_rebooking_top_charge:
+            self.path += "reb/"
+
         for i, piece in enumerate(self.path.split("/")[1:-1]):
             if not os.path.exists(
                 "../" + "/".join(self.path.split("/")[1:-1][: i + 1])
             ):
                 os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
+
         if self.args.state == "fl":
             start = START_FL
         elif self.args.state == "ga":
             start = START_GA
         else:
             raise ValueError("unidentified state")
+
         self.windows = [n * 28 for n in range(1, round((self.last - start).days / 28))]
         if self.args.windows:
             self.windows = self.args.windows
 
     def run(self):
-        if self.args.demographics:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_demographics.csv"
-                    )["rosters"].unique()
-                )
-            )
-        elif self.args.charges:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
-                    )["rosters"].unique()
-                )
-            )
-        else:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters.csv"
-                    )["rosters"].unique()
-                )
-            )
+        rosters = get_roster_sample(self)
         df = pd.DataFrame(thread(self.get_bookings, rosters))
-        df = self.apply_exclusions(df)
-        df["cycle"] = df["first_seen"].apply(lambda date: self.find_date_range(date))
+        df = apply_exclusions(self, df)
+        df["cycle"] = df["first_seen"].apply(lambda date: find_date_range(self, date))
         df = df.sort_values(by=["id_roster", "id_person", "first_seen"])
         df = self.flag_rebookings(df)
 
+        if not self.args.by_top_charge and not self.args.by_rebooking_top_charge:
+            for window in self.windows:
+                mx = self.prep_matrix(df, window)
+                if not os.path.exists(self.path + f"all_rebookings/"):
+                    os.mkdir(self.path + f"all_rebookings/")
+                mx.to_csv(
+                    self.path + f"all_rebookings/within_{window}_days.csv",
+                    index=False,
+                )
+
         # run through windows, abridge data as necessary
         # and output state-year-month matrix csvs
-        if self.args.charges:
-            for charge in df["charge"].unique():
+        elif self.args.by_top_charge and not self.args.by_rebooking_top_charge:
+            for charge in L1:
                 tmp = df[df["charge"] == charge]
                 for window in self.windows:
                     mx = self.prep_matrix(tmp, window)
                     if not os.path.exists(
-                        self.path + f"{charge.lower().replace(' ', '_')}"
+                        self.path
+                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/"
                     ):
-                        os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}")
+                        os.makedirs(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/"
+                        )
                     mx.to_csv(
                         self.path
-                        + f"{charge.lower().replace(' ', '_')}/within_{window}_days.csv",
+                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/within_{window}_days.csv",
                         index=False,
                     )
+
+        elif self.args.by_rebooking_top_charge and not self.args.by_top_charge:
+            for charge in L1:
+                drop_cols = [
+                    col
+                    for col in df.columns
+                    if col.startswith("rb_") and not col.endswith(f"_{charge}")
+                ]
+                tmp = df[[col for col in df.columns if col not in drop_cols]]
+                tmp.columns = tmp.columns.str.removesuffix(f"_{charge}")
+                for window in self.windows:
+                    mx = self.prep_matrix(tmp, window)
+                    if not os.path.exists(
+                        self.path + f"reb/by_rebooking_top_charge/"
+                        f"{charge.lower().replace(' ', '_')}"
+                    ):
+                        os.makedirs(
+                            self.path
+                            + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}"
+                        )
+                    mx.to_csv(
+                        self.path
+                        + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}/within_{window}_days.csv",
+                        index=False,
+                    )
+
         else:
-            for window in self.windows:
-                mx = self.prep_matrix(df, window)
-                mx.to_csv(
-                    self.path + f"within_{window}_days.csv",
-                    index=False,
-                )
+            for charge in L1:
+                tmp = df[df["charge"] == charge]
+                for c in L1:
+                    drop_cols = [
+                        col
+                        for col in tmp.columns
+                        if col.startswith("rb_") and not col.endswith(f"_{c}")
+                    ]
+                    t = tmp[[col for col in tmp.columns if col not in drop_cols]]
+                    t.columns = t.columns.str.removesuffix(f"_{c}")
+                    for window in self.windows:
+                        mx = self.prep_matrix(t, window)
+                        if not os.path.exists(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
+                            f"{c.lower().replace(' ', '_')}/"
+                        ):
+                            os.makedirs(
+                                self.path
+                                + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
+                                f"{c.lower().replace(' ', '_')}/"
+                            )
+                        mx.to_csv(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
+                            f"{c.lower().replace(' ', '_')}/within_{window}_days.csv",
+                            index=False,
+                        )
 
     def get_bookings(self, roster):
         """
@@ -113,7 +143,7 @@ class RebookingProportions:
             "meta.County": county,
             "meta.first_seen": {"$gte": self.first, "$lte": self.last},
         }
-        if self.args.charges:
+        if self.args.sample == "charges":
             match.update({"Top_Charge": {"$exists": True}})
         query = {
             "_id": 0,
@@ -128,24 +158,6 @@ class RebookingProportions:
         }
 
         return list(self.dbs.bookings.find(match, query))
-
-    def apply_exclusions(self, df):
-        """
-        reduce set of bookings based on exclusion criteria
-        (specific flags, type issues with `id_person`, etc.)
-        """
-        df["flags"] = df["flags"].astype(str)
-        for flag in self.flags:
-            df = df[~df["flags"].str.contains(flag)]
-        del df["flags"]
-        df = df[df["id_person"].notna()]
-        return df[~df["id_person"].apply(lambda o: isinstance(o, list))]
-
-    def find_date_range(self, date):
-        for i, start_date, end_date in self.cycles:
-            if start_date <= date <= end_date:
-                return i
-        return None
 
     def flag_rebookings(self, df):
         """
@@ -166,6 +178,24 @@ class RebookingProportions:
                         bookings[i + 1]["first_seen"] - bookings[i]["first_seen"]
                     ).days <= window:
                         r.update({f"rb_{window}": 1})
+
+                # if grouping by rebooking charge downstream,
+                # indicate rebooking within window for each L1 charge type
+                if self.args.by_rebooking_top_charge:
+                    for window in self.windows:
+                        for charge in L1:
+                            if (
+                                bookings[i + 1]["charge"] == charge
+                                and (
+                                    bookings[i + 1]["first_seen"]
+                                    - bookings[i]["first_seen"]
+                                ).days
+                                <= window
+                            ):
+                                r.update({f"rb_{window}_{charge}": 1})
+                            else:
+                                r.update({f"rb_{window}_{charge}": 0})
+
                 rs.append(r)
 
             return rs
@@ -214,6 +244,14 @@ if __name__ == "__main__":
         nargs="*",
         help="""
         Forward windows within which to check for rebookings
+        """,
+    )
+    parser.add_argument(
+        "-brtc",
+        "--by_rebooking_top_charge",
+        action="store_true",
+        help="""
+        If specified, split out results based on charge type of rebooking, not initial booking
         """,
     )
     args = parser.parse_args()

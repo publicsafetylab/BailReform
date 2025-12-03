@@ -10,15 +10,9 @@ class ADP:
         self.cycles = get_cycles(self)
         self.first = min([t[1] for t in self.cycles])
         self.last = max([t[2] for t in self.cycles])
-        if self.args.demographics:
-            self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov/adp/"
-        elif self.args.charges:
-            self.path = f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1/adp/"
-        else:
-            self.path = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
-                f"/adp/"
-            )
+        self.path = get_path_prefix(self)
+        if not self.args.by_top_charge:
+            self.path += "adp/"
         for i, piece in enumerate(self.path.split("/")[1:-1]):
             if not os.path.exists(
                 "../" + "/".join(self.path.split("/")[1:-1][: i + 1])
@@ -26,37 +20,25 @@ class ADP:
                 os.mkdir("../" + "/".join(self.path.split("/")[1:-1][: i + 1]))
 
     def run(self):
-        if self.args.demographics:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_demographics.csv"
-                    )["rosters"].unique()
-                )
-            )
-        elif self.args.charges:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
-                    )["rosters"].unique()
-                )
-            )
-        else:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters.csv"
-                    )["rosters"].unique()
-                )
-            )
+        rosters = get_roster_sample(self)
 
-        # handle per-top-charge splits
-        if self.args.charges:
-            res = thread(self.get_one_roster_pops_by_l1, rosters, threads=10)
+        # if no top charge specified, get overall adp, ada and adr
+        if not self.args.by_top_charge:
+            mxs = self.get_pops(rosters)
+            for field, mx in mxs.items():
+                mx = self.prep_matrix(mx, field)
+                mx.to_csv(
+                    self.path + f"ad{field[0]}.csv",
+                    index=False,
+                )
+
+        # otherwise, handle per-top-charge splits
+        # (note: these cannot be constructed from the pre-aggregated db)
+        if self.args.by_top_charge:
+            res = thread(self.get_one_roster_pops_by_top_charge, rosters, threads=10)
             df = pd.DataFrame(res)
             df = df.sort_values(by=["state", "roster", "date", "charge"])
-            df["cycle"] = df["date"].apply(lambda date: self.find_date_range(date))
+            df["cycle"] = df["date"].apply(lambda date: find_date_range(self, date))
 
             # for each charge, get averages by year-month
             for charge in df["charge"].unique():
@@ -75,8 +57,10 @@ class ADP:
                     "admissions": admissions,
                     "releases": releases,
                 }
+
+                # save output matrix to charge-specific path
                 for field, tmp in mxs.items():
-                    matrix = tmp.pivot(
+                    mx = tmp.pivot(
                         columns=["cycle"], index=["state"], values=field
                     ).T.reset_index()
 
@@ -84,20 +68,17 @@ class ADP:
                         self.path + f"{charge.lower().replace(' ', '_')}"
                     ):
                         os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}")
-                    matrix.to_csv(
+                    if not os.path.exists(
+                        self.path + f"{charge.lower().replace(' ', '_')}/adp"
+                    ):
+                        os.makedirs(
+                            self.path + f"{charge.lower().replace(' ', '_')}/adp"
+                        )
+                    mx.to_csv(
                         self.path
-                        + f"{charge.lower().replace(' ', '_')}/ad{field[0]}.csv",
+                        + f"{charge.lower().replace(' ', '_')}/adp/ad{field[0]}.csv",
                         index=False,
                     )
-
-        else:
-            mxs = self.get_pops(rosters)
-            for field, mx in mxs.items():
-                mx = self.prep_matrix(mx, field)
-                mx.to_csv(
-                    self.path + f"ad{field[0]}.csv",
-                    index=False,
-                )
 
     def get_pops(self, rosters):
         """
@@ -140,13 +121,13 @@ class ADP:
 
         # get average by year-month
         df = df.sort_values(by=["state", "roster", "date"])
-        df["cycle"] = df["date"].apply(lambda date: self.find_date_range(date))
+        df["cycle"] = df["date"].apply(lambda date: find_date_range(self, date))
         pops = df.groupby(["state", "cycle"])["population"].mean().reset_index()
         admissions = df.groupby(["state", "cycle"])["admissions"].mean().reset_index()
         releases = df.groupby(["state", "cycle"])["releases"].mean().reset_index()
         return {"population": pops, "admissions": admissions, "releases": releases}
 
-    def get_one_roster_pops_by_l1(self, roster):
+    def get_one_roster_pops_by_top_charge(self, roster):
         state, county = roster.split("-")
 
         def get_daily_traffic(date):
@@ -178,7 +159,6 @@ class ADP:
                         "meta.last_seen": date,
                     }
                 )
-
                 daily_res.append(
                     {
                         "charge": charge,
@@ -195,12 +175,6 @@ class ADP:
 
         results = thread(get_daily_traffic, pd.date_range(self.first, self.last))
         return results
-
-    def find_date_range(self, date):
-        for i, start_date, end_date in self.cycles:
-            if start_date <= date <= end_date:
-                return i
-        return None
 
     @staticmethod
     def prep_matrix(df, field):

@@ -22,87 +22,36 @@ class Incapacitation:
         self.cycles = get_cycles(self)
         self.first = min([t[1] for t in self.cycles])
         self.last = max([t[2] for t in self.cycles])
-        if self.args.demographics:
-            self.path_piecewise = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov"
-                f"/incapacitation_piecewise/"
-            )
-            self.path_cumulative = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/cov"
-                f"/incapacitation_cumulative/"
-            )
-        elif self.args.charges:
-            self.path_piecewise = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1"
-                f"/incapacitation_piecewise/"
-            )
-            self.path_cumulative = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/l1"
-                f"/incapacitation_cumulative/"
-            )
-        else:
-            self.path_piecewise = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
-                f"/incapacitation_piecewise/"
-            )
-            self.path_cumulative = (
-                f"../matrices/{self.args.state}/threshold_{str(self.args.threshold).replace('.', '_')}/no_cov"
-                f"/incapacitation_cumulative/"
-            )
-        for i, piece in enumerate(self.path_piecewise.split("/")[1:-1]):
-            if not os.path.exists(
-                "../" + "/".join(self.path_piecewise.split("/")[1:-1][: i + 1])
-            ):
-                os.mkdir(
-                    "../" + "/".join(self.path_piecewise.split("/")[1:-1][: i + 1])
-                )
-        for i, piece in enumerate(self.path_cumulative.split("/")[1:-1]):
-            if not os.path.exists(
-                "../" + "/".join(self.path_cumulative.split("/")[1:-1][: i + 1])
-            ):
-                os.mkdir(
-                    "../" + "/".join(self.path_cumulative.split("/")[1:-1][: i + 1])
-                )
+
+        self.path = get_path_prefix(self)
+        if not self.args.by_top_charge:
+            self.path += "inc/"
+            self.path_piece = self.path + "piecewise/"
+            self.path_cum = self.path + "cumulative/"
+
+            for path in [self.path_piece, self.path_cum]:
+                for i, piece in enumerate(path.split("/")[1:-1]):
+                    if not os.path.exists(
+                        "../" + "/".join(path.split("/")[1:-1][: i + 1])
+                    ):
+                        os.mkdir("../" + "/".join(path.split("/")[1:-1][: i + 1]))
+
         if self.args.state == "fl":
             start = START_FL
         elif self.args.state == "ga":
             start = START_GA
         else:
             raise ValueError("unidentified state")
+
         self.windows = [n * 28 for n in range(1, round((self.last - start).days / 28))]
         if self.args.windows:
             self.windows = self.args.windows
 
     def run(self):
-        if self.args.demographics:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_demographics.csv"
-                    )["rosters"].unique()
-                )
-            )
-        elif self.args.charges:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters_charges.csv"
-                    )["rosters"].unique()
-                )
-            )
-        else:
-            rosters = sorted(
-                list(
-                    pd.read_csv(
-                        f"../tmp/threshold_{str(self.args.threshold).replace('.', '_')}/rosters.csv"
-                    )["rosters"].unique()
-                )
-            )
-
+        rosters = get_roster_sample(self)
         df = pd.DataFrame(thread(self.get_bookings, rosters))
-        df = self.apply_exclusions(df)
-
-        df["cycle"] = df["first_seen"].apply(lambda date: self.find_date_range(date))
+        df = apply_exclusions(self, df)
+        df["cycle"] = df["first_seen"].apply(lambda date: find_date_range(self, date))
         df["los"] = (df["last_seen"] - df["first_seen"]).dt.days + 1
 
         for w in self.windows:
@@ -129,47 +78,51 @@ class Incapacitation:
 
         # run through windows, abridge data as necessary
         # and output state-year-month matrix csvs
-        if self.args.charges:
-            for charge in df["charge"].unique():
-                tmp = df[df["charge"] == charge]
-                for window in self.windows:
-                    mx_cumulative = self.prep_matrix_cumulative(tmp, window)
-                    if not os.path.exists(
-                        self.path_cumulative + f"{charge.lower().replace(' ', '_')}"
-                    ):
-                        os.makedirs(
-                            self.path_cumulative + f"{charge.lower().replace(' ', '_')}"
-                        )
-                    mx_cumulative.to_csv(
-                        self.path_cumulative
-                        + f"{charge.lower().replace(' ', '_')}/proportion_of_next_{window}_days.csv",
-                        index=False,
-                    )
-                    mx_piecewise = self.prep_matrix_piecewise(tmp, window)
-                    if not os.path.exists(
-                        self.path_piecewise + f"{charge.lower().replace(' ', '_')}"
-                    ):
-                        os.makedirs(
-                            self.path_piecewise + f"{charge.lower().replace(' ', '_')}"
-                        )
-                    mx_piecewise.to_csv(
-                        self.path_piecewise
-                        + f"{charge.lower().replace(' ', '_')}/proportion_of_days_{window - 27}_to_{window}.csv",
-                        index=False,
-                    )
-        else:
+        if not self.args.by_top_charge:
             for window in self.windows:
                 mx_cumulative = self.prep_matrix_cumulative(df, window)
                 mx_cumulative.to_csv(
-                    self.path_cumulative + f"proportion_of_next_{window}_days.csv",
+                    self.path_cum + f"proportion_of_days_1_to_{window}.csv",
                     index=False,
                 )
                 mx_piecewise = self.prep_matrix_piecewise(df, window)
                 mx_piecewise.to_csv(
-                    self.path_piecewise
+                    self.path_piece
                     + f"proportion_of_days_{window - 27}_to_{window}.csv",
                     index=False,
                 )
+
+        else:
+            for charge in L1:
+                tmp = df[df["charge"] == charge]
+                for window in self.windows:
+                    mx_cumulative = self.prep_matrix_cumulative(tmp, window)
+                    if not os.path.exists(
+                        self.path
+                        + f"{charge.lower().replace(' ', '_')}/inc/cumulative/"
+                    ):
+                        os.makedirs(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/inc/cumulative/"
+                        )
+                    mx_cumulative.to_csv(
+                        self.path
+                        + f"{charge.lower().replace(' ', '_')}/inc/cumulative/proportion_of_days_1_to_{window}.csv",
+                        index=False,
+                    )
+                    mx_piecewise = self.prep_matrix_piecewise(tmp, window)
+                    if not os.path.exists(
+                        self.path + f"{charge.lower().replace(' ', '_')}/inc/piecewise/"
+                    ):
+                        os.makedirs(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/inc/piecewise/"
+                        )
+                    mx_piecewise.to_csv(
+                        self.path
+                        + f"{charge.lower().replace(' ', '_')}/inc/piecewise/proportion_of_days_{window - 27}_to_{window}.csv",
+                        index=False,
+                    )
 
     def get_bookings(self, roster):
         """
@@ -182,7 +135,7 @@ class Incapacitation:
             "meta.County": county,
             "meta.first_seen": {"$gte": self.first, "$lte": self.last},
         }
-        if self.args.charges:
+        if self.args.by_top_charge:
             match.update({"Top_Charge": {"$exists": True}})
         query = {
             "_id": 0,
@@ -197,24 +150,6 @@ class Incapacitation:
             "charge": "$Top_Charge",
         }
         return list(self.dbs.bookings.find(match, query))
-
-    def apply_exclusions(self, df):
-        """
-        reduce set of bookings based on exclusion criteria
-        (specific flags, type issues with `id_person`, etc.)
-        """
-        df["flags"] = df["flags"].astype(str)
-        for flag in self.flags:
-            df = df[~df["flags"].str.contains(flag)]
-        del df["flags"]
-        df = df[df["id_person"].notna()]
-        return df[~df["id_person"].apply(lambda o: isinstance(o, list))]
-
-    def find_date_range(self, date):
-        for i, start_date, end_date in self.cycles:
-            if start_date <= date <= end_date:
-                return i
-        return None
 
     def prep_matrix_cumulative(self, df, window):
         """
@@ -253,7 +188,7 @@ if __name__ == "__main__":
         type=int,
         nargs="*",
         help="""
-        Forward windows within which to check for rebookings
+        Forward windows within which to check for rebookings.
         """,
     )
     args = parser.parse_args()
