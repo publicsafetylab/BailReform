@@ -7,6 +7,7 @@ from utils import *
 class LOS:
     def __init__(self, arguments):
         self.args = arguments
+        resolve_window(self.args)
         self.first = dt.strptime(self.args.first, "%Y-%m-%d")
         self.last = dt.strptime(self.args.last, "%Y-%m-%d")
         self.dbs = MongoCollections()
@@ -42,9 +43,15 @@ class LOS:
 
         # if no top charge specified, get overall los
         if not self.args.by_top_charge:
-            mx = self.prep_matrix(df)
-            mx.to_csv(
-                self.path + f"cutoff_{self.los_cutoff}_days.csv",
+            mxp = self.prep_matrix(df)
+            mxp.to_csv(
+                self.path + f"prop/cutoff_{self.los_cutoff}_days.csv",
+                index=False,
+            )
+
+            mxd = self.prep_matrix(df, denom=True)
+            mxd.to_csv(
+                self.path + f"denom/cutoff_{self.los_cutoff}_days.csv",
                 index=False,
             )
 
@@ -52,7 +59,8 @@ class LOS:
         else:
             for charge in L1:
                 res = df[df["charge"] == charge]
-                mx = self.prep_matrix(res)
+
+                mxp = self.prep_matrix(res)
 
                 # save output matrix to charge-specific path
                 if not os.path.exists(
@@ -63,9 +71,38 @@ class LOS:
                     self.path + f"{charge.lower().replace(' ', '_')}/los"
                 ):
                     os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}/los")
-                mx.to_csv(
+                if not os.path.exists(
+                    self.path + f"{charge.lower().replace(' ', '_')}/los/prop"
+                ):
+                    os.makedirs(
+                        self.path + f"{charge.lower().replace(' ', '_')}/los/prop"
+                    )
+                mxp.to_csv(
                     self.path
-                    + f"{charge.lower().replace(' ', '_')}/los/cutoff_{self.los_cutoff}_days.csv",
+                    + f"{charge.lower().replace(' ', '_')}/los/prop/cutoff_{self.los_cutoff}_days.csv",
+                    index=False,
+                )
+
+                mxd = self.prep_matrix(res, denom=True)
+
+                # save output matrix to charge-specific path
+                if not os.path.exists(
+                    self.path + f"{charge.lower().replace(' ', '_')}"
+                ):
+                    os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}")
+                if not os.path.exists(
+                    self.path + f"{charge.lower().replace(' ', '_')}/los"
+                ):
+                    os.makedirs(self.path + f"{charge.lower().replace(' ', '_')}/los")
+                if not os.path.exists(
+                    self.path + f"{charge.lower().replace(' ', '_')}/los/denom"
+                ):
+                    os.makedirs(
+                        self.path + f"{charge.lower().replace(' ', '_')}/los/denom"
+                    )
+                mxd.to_csv(
+                    self.path
+                    + f"{charge.lower().replace(' ', '_')}/los/denom/cutoff_{self.los_cutoff}_days.csv",
                     index=False,
                 )
 
@@ -102,7 +139,7 @@ class LOS:
         return 0
 
     @staticmethod
-    def prep_matrix(df):
+    def prep_matrix(df, denom=False):
         """
         reformat to matrix of populations by state-year-month
         """
@@ -117,9 +154,16 @@ class LOS:
         aggregated["proportion"] = (
             aggregated[f"los_indicator"] / aggregated["admissions"]
         )
-        matrix = aggregated.pivot(
-            columns=["cycle"], index=["state"], values="proportion"
-        ).T.reset_index()
+
+        if denom:
+            matrix = aggregated.pivot(
+                columns=["cycle"], index=["state"], values="admissions"
+            ).T.reset_index()
+        else:
+            matrix = aggregated.pivot(
+                columns=["cycle"], index=["state"], values="proportion"
+            ).T.reset_index()
+
         return matrix
 
 

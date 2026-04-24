@@ -4,6 +4,7 @@ from utils import *
 class ADP:
     def __init__(self, arguments):
         self.args = arguments
+        resolve_window(self.args)
         self.first = dt.strptime(self.args.first, "%Y-%m-%d")
         self.last = dt.strptime(self.args.last, "%Y-%m-%d")
         self.dbs = MongoCollections()

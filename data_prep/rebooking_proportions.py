@@ -8,6 +8,7 @@ from utils import *
 class RebookingProportions:
     def __init__(self, arguments):
         self.args = arguments
+        resolve_window(self.args)
         self.first = dt.strptime(self.args.first, "%Y-%m-%d")
         self.last = dt.strptime(self.args.last, "%Y-%m-%d")
         self.dbs = MongoCollections()
@@ -48,11 +49,18 @@ class RebookingProportions:
 
         if not self.args.by_top_charge and not self.args.by_rebooking_top_charge:
             for window in self.windows:
-                mx = self.prep_matrix(df, window)
-                if not os.path.exists(self.path + f"all_rebookings/"):
-                    os.mkdir(self.path + f"all_rebookings/")
-                mx.to_csv(
-                    self.path + f"all_rebookings/within_{window}_days.csv",
+                mxp = self.prep_matrix(df, window)
+                if not os.path.exists(self.path + f"all_rebookings/prop/"):
+                    os.mkdir(self.path + f"all_rebookings/prop/")
+                mxp.to_csv(
+                    self.path + f"all_rebookings/prop/within_{window}_days.csv",
+                    index=False,
+                )
+                mxd = self.prep_matrix(df, window, denom=True)
+                if not os.path.exists(self.path + f"all_rebookings/denom/"):
+                    os.mkdir(self.path + f"all_rebookings/denom/")
+                mxd.to_csv(
+                    self.path + f"all_rebookings/denom/within_{window}_days.csv",
                     index=False,
                 )
 
@@ -62,18 +70,32 @@ class RebookingProportions:
             for charge in L1:
                 tmp = df[df["charge"] == charge]
                 for window in self.windows:
-                    mx = self.prep_matrix(tmp, window)
+                    mxp = self.prep_matrix(tmp, window)
                     if not os.path.exists(
                         self.path
-                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/"
+                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/prop/"
                     ):
                         os.makedirs(
                             self.path
-                            + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/"
+                            + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/prop/"
                         )
-                    mx.to_csv(
+                    mxp.to_csv(
                         self.path
-                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/within_{window}_days.csv",
+                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/prop/within_{window}_days.csv",
+                        index=False,
+                    )
+                    mxd = self.prep_matrix(tmp, window, denom=True)
+                    if not os.path.exists(
+                        self.path
+                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/denom/"
+                    ):
+                        os.makedirs(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/denom/"
+                        )
+                    mxd.to_csv(
+                        self.path
+                        + f"{charge.lower().replace(' ', '_')}/reb/all_rebookings/denom/within_{window}_days.csv",
                         index=False,
                     )
 
@@ -87,18 +109,32 @@ class RebookingProportions:
                 tmp = df[[col for col in df.columns if col not in drop_cols]]
                 tmp.columns = tmp.columns.str.removesuffix(f"_{charge}")
                 for window in self.windows:
-                    mx = self.prep_matrix(tmp, window)
+                    mxp = self.prep_matrix(tmp, window)
                     if not os.path.exists(
                         self.path + f"reb/by_rebooking_top_charge/"
-                        f"{charge.lower().replace(' ', '_')}"
+                        f"{charge.lower().replace(' ', '_')}/prop/"
                     ):
                         os.makedirs(
                             self.path
-                            + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}"
+                            + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}/prop/"
                         )
-                    mx.to_csv(
+                    mxp.to_csv(
                         self.path
-                        + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}/within_{window}_days.csv",
+                        + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}/prop/within_{window}_days.csv",
+                        index=False,
+                    )
+                    mxd = self.prep_matrix(tmp, window, denom=True)
+                    if not os.path.exists(
+                        self.path + f"reb/by_rebooking_top_charge/"
+                        f"{charge.lower().replace(' ', '_')}/denom/"
+                    ):
+                        os.makedirs(
+                            self.path
+                            + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}/denom/"
+                        )
+                    mxd.to_csv(
+                        self.path
+                        + f"reb/by_rebooking_top_charge/{charge.lower().replace(' ', '_')}/denom/within_{window}_days.csv",
                         index=False,
                     )
 
@@ -114,21 +150,38 @@ class RebookingProportions:
                     t = tmp[[col for col in tmp.columns if col not in drop_cols]]
                     t.columns = t.columns.str.removesuffix(f"_{c}")
                     for window in self.windows:
-                        mx = self.prep_matrix(t, window)
+                        mxp = self.prep_matrix(t, window)
                         if not os.path.exists(
                             self.path
                             + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
-                            f"{c.lower().replace(' ', '_')}/"
+                            f"{c.lower().replace(' ', '_')}/prop/"
                         ):
                             os.makedirs(
                                 self.path
                                 + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
-                                f"{c.lower().replace(' ', '_')}/"
+                                f"{c.lower().replace(' ', '_')}/prop/"
                             )
-                        mx.to_csv(
+                        mxp.to_csv(
                             self.path
                             + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
-                            f"{c.lower().replace(' ', '_')}/within_{window}_days.csv",
+                            f"{c.lower().replace(' ', '_')}/prop/within_{window}_days.csv",
+                            index=False,
+                        )
+                        mxd = self.prep_matrix(t, window, denom=True)
+                        if not os.path.exists(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
+                            f"{c.lower().replace(' ', '_')}/denom/"
+                        ):
+                            os.makedirs(
+                                self.path
+                                + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
+                                f"{c.lower().replace(' ', '_')}/denom/"
+                            )
+                        mxd.to_csv(
+                            self.path
+                            + f"{charge.lower().replace(' ', '_')}/reb/by_rebooking_top_charge/"
+                            f"{c.lower().replace(' ', '_')}/denom/within_{window}_days.csv",
                             index=False,
                         )
 
@@ -213,7 +266,7 @@ class RebookingProportions:
 
         return df
 
-    def prep_matrix(self, df, window):
+    def prep_matrix(self, df, window, denom=False):
         """
         reduce span of admissions to account for
         look-forward window for rebookings,
@@ -229,9 +282,16 @@ class RebookingProportions:
         rebookings = df.groupby(["state", "cycle"])[f"rb_{window}"].sum().reset_index()
         aggregated = pd.merge(admissions, rebookings, on=["state", "cycle"])
         aggregated["proportion"] = aggregated[f"rb_{window}"] / aggregated["admissions"]
-        matrix = aggregated.pivot(
-            columns=["cycle"], index=["state"], values="proportion"
-        ).T.reset_index()
+
+        if denom:
+            matrix = aggregated.pivot(
+                columns=["cycle"], index=["state"], values="admissions"
+            ).T.reset_index()
+        else:
+            matrix = aggregated.pivot(
+                columns=["cycle"], index=["state"], values="proportion"
+            ).T.reset_index()
+
         return matrix
 
 
